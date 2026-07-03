@@ -46,17 +46,6 @@ jobs:
             exit 1
           }
 
-      - name: Prepare output directory
-        if: inputs.runner == 'ubuntu-latest'
-        run: rm -f output && mkdir -p output
-
-      - name: Prepare output directory
-        if: inputs.runner == 'self-hosted'
-        shell: pwsh
-        run: |
-          if (Test-Path output -PathType Leaf) { Remove-Item output -Force }
-          New-Item -ItemType Directory -Force -Path output | Out-Null
-
       - name: Check NAZK API access
         run: python main.py --check-only
 
