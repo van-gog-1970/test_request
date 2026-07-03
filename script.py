@@ -1,4 +1,4 @@
-mport urllib.request
+import urllib.request
 
 print("Привіт! Скрипт успішно запустився на GitHub Actions.")
 
