@@ -13,6 +13,7 @@ load_dotenv()
 
 OUTPUT_DIR = "output"
 DEFAULT_EXCEL_FILE = "persons.xlsx"
+MAX_NAME_LENGTH = 50
 INVALID_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]')
 
 
@@ -23,7 +24,10 @@ def get_excel_path() -> str:
 
 
 def sanitize_filename(name: str) -> str:
-    return INVALID_FILENAME_CHARS.sub("_", name.strip())
+    safe_name = INVALID_FILENAME_CHARS.sub("_", name.strip())
+    if len(safe_name) > MAX_NAME_LENGTH:
+        safe_name = safe_name[:MAX_NAME_LENGTH].rstrip(" _")
+    return safe_name
 
 
 def build_output_path(edrpou: str, name: str) -> str:
@@ -36,9 +40,14 @@ def normalize_edrpou(value) -> str | None:
     if value is None:
         return None
 
-    text = str(value).strip()
-    if not text:
-        return None
+    if isinstance(value, float) and value.is_integer():
+        text = str(int(value))
+    else:
+        text = str(value).strip()
+        if not text:
+            return None
+        if "." in text and text.replace(".", "", 1).isdigit():
+            text = str(int(float(text)))
 
     if text.isdigit():
         return text.zfill(8)
@@ -160,4 +169,3 @@ if __name__ == "__main__":
         create_excel_template(excel_path)
 
     process_excel(excel_path)
-
