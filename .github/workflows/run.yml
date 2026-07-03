@@ -1,7 +1,12 @@
-name: Test Python Run
+name: Interactive Python Run
 
 on:
-  workflow_dispatch:              # Позволяет запускать скрипт вручную кнопкой
+  workflow_dispatch:
+    inputs:
+      user_message:
+        description: 'Що ви хочете записати у файл?'
+        required: true
+        default: 'Привіт із GitHub Actions!'
 
 jobs:
   run-code:
@@ -16,5 +21,15 @@ jobs:
       with:
         python-version: '3.11'
 
+    # Передаємо введене вами повідомлення як аргумент для скрипта
     - name: Run Python script
-      run: python script.py
+      run: python script.py "${{ github.event.inputs.user_message }}"
+
+    # Зберігаємо оновлений файл назад у репозиторій
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@://github.com"
+        git add user_answers.txt
+        git commit -m "Додано відповідь користувача [skip ci]" || echo "Немає змін"
+        git push
