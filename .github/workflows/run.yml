@@ -6,7 +6,7 @@ on:
       runner:
         description: Runner type
         required: true
-        default: ubuntu-latest
+        default: self-hosted
         type: choice
         options:
           - ubuntu-latest
