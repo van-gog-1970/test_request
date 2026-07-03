@@ -112,9 +112,12 @@ def download_declarations(workplace_edrpou: str, output_file: str = None):
 
         data = response.json()
 
-        if data.get("error") == 1310172:
-            print("Всі сторінки отримано.")
-            break
+        if isinstance(data, dict):
+            if data.get("error") == 1310172:
+                print("Всі сторінки отримано.")
+                break
+            if "error" in data:
+                raise RuntimeError(f"NAZK API error: {data['error']}")
 
         if isinstance(data, list):
             all_items.extend(data)
@@ -143,14 +146,17 @@ def download_declarations(workplace_edrpou: str, output_file: str = None):
     return len(all_items)
 
 
-def process_excel(excel_path: str):
+def process_excel(excel_path: str) -> int:
     persons = read_persons_from_excel(excel_path)
+    print(f"Знайдено {len(persons)} організацій у {excel_path}")
+
     if not persons:
         print(f"У файлі {excel_path} не знайдено жодного валідного рядка.")
-        return
+        return 0
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     total = len(persons)
+    saved_count = 0
 
     for index, (edrpou, name) in enumerate(persons, start=1):
         output_file = build_output_path(edrpou, name)
@@ -158,8 +164,12 @@ def process_excel(excel_path: str):
 
         try:
             download_declarations(edrpou, output_file=output_file)
+            saved_count += 1
         except Exception as error:
             print(f"Помилка для {edrpou} ({name}): {error}")
+
+    print(f"Створено {saved_count} з {total} JSON-файлів у {OUTPUT_DIR}/")
+    return saved_count
 
 
 if __name__ == "__main__":
@@ -168,4 +178,6 @@ if __name__ == "__main__":
     if not Path(excel_path).exists():
         create_excel_template(excel_path)
 
-    process_excel(excel_path)
+    saved_count = process_excel(excel_path)
+    if saved_count == 0:
+        sys.exit(1)
