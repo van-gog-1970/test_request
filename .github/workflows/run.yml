@@ -1,35 +1,68 @@
 name: Download NAZK declarations
+
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner type
+        required: true
+        default: ubuntu-latest
+        type: choice
+        options:
+          - ubuntu-latest
+          - self-hosted
+
 env:
   NAZK_API_URL: public-api.nazk.gov.ua
   EXCEL_FILE: organizations.xlsx
+
 jobs:
   download:
-    runs-on: self-hosted
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 360
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements.txt
+
       - run: pip install -r requirements.txt
+
       - name: Check Excel file exists
+        if: inputs.runner == 'ubuntu-latest'
+        run: |
+          test -f "$EXCEL_FILE" || (echo "Excel not found: $EXCEL_FILE" && exit 1)
+
+      - name: Check Excel file exists
+        if: inputs.runner == 'self-hosted'
         shell: pwsh
         run: |
           if (-not (Test-Path $env:EXCEL_FILE)) {
             Write-Error "Excel not found: $env:EXCEL_FILE"
             exit 1
           }
+
       - name: Prepare output directory
+        if: inputs.runner == 'ubuntu-latest'
+        run: rm -f output && mkdir -p output
+
+      - name: Prepare output directory
+        if: inputs.runner == 'self-hosted'
         shell: pwsh
         run: |
           if (Test-Path output -PathType Leaf) { Remove-Item output -Force }
           New-Item -ItemType Directory -Force -Path output | Out-Null
+
+      - name: Check NAZK API access
+        run: python main.py --check-only
+
       - name: Run parser
         run: python main.py
+
       - name: Upload JSON results
         uses: actions/upload-artifact@v4
         with:
