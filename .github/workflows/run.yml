@@ -24,7 +24,9 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Check Excel file exists
-        run: test -f "$EXCEL_FILE" || (echo "Excel not found: $EXCEL_FILE" && exit 1)
+                - name: Check Excel file exists
+                run: |
+                  test -f "$EXCEL_FILE" || (echo "Excel not found: $EXCEL_FILE" && exit 1)
 
       - name: Run parser
         run: python main.py
