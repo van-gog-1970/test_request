@@ -15,11 +15,23 @@ OUTPUT_DIR = "output"
 DEFAULT_EXCEL_FILE = "persons.xlsx"
 MAX_NAME_LENGTH = 50
 INVALID_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]')
+NAZK_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "uk-UA,uk;q=0.9,en;q=0.8",
+    "Referer": "https://public.nazk.gov.ua/",
+    "Origin": "https://public.nazk.gov.ua",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/131.0.0.0 Safari/537.36"
+    ),
+}
 
 
 def get_excel_path() -> str:
-    if len(sys.argv) > 1:
-        return sys.argv[1]
+    args = [arg for arg in sys.argv[1:] if arg != "--check-only"]
+    if args:
+        return args[0]
     return os.environ.get("EXCEL_FILE", DEFAULT_EXCEL_FILE)
 
 
@@ -85,6 +97,40 @@ def read_persons_from_excel(path: str) -> list[tuple[str, str]]:
     return persons
 
 
+def check_nazk_access() -> bool:
+    host = os.environ.get("NAZK_API_URL", "public-api.nazk.gov.ua")
+    url = f"https://{host}/v2/documents/list"
+    params = {"workPlaceEdrpou": "40381452", "page": 1}
+
+    print("=== Перевірка доступу до NAZK API ===")
+    print(f"Runner OS: {os.environ.get('RUNNER_OS', 'local')}")
+    print(f"Runner name: {os.environ.get('RUNNER_NAME', 'local')}")
+    print(f"GitHub Actions: {os.environ.get('GITHUB_ACTIONS', 'false')}")
+    print(f"URL: {url}")
+
+    session = requests.Session()
+    session.headers.update(NAZK_HEADERS)
+    response = session.get(url, params=params, timeout=30)
+
+    print(f"HTTP status: {response.status_code}")
+
+    if response.status_code == 200:
+        print("РЕЗУЛЬТАТ: ДОСТУП Є — NAZK API відповідає")
+        print("::notice::NAZK API доступний (HTTP 200)")
+        return True
+
+    if response.status_code == 403:
+        print("РЕЗУЛЬТАТ: ЗАБЛОКОВАНО — NAZK API повернув 403 Forbidden")
+        print("Ймовірна причина: IP GitHub datacenter заблоковано WAF/Cloudflare")
+        print("Рішення: self-hosted runner на вашому ПК або локальний запуск")
+        print("::error::NAZK API заблоковано (403 Forbidden)")
+        return False
+
+    print(f"РЕЗУЛЬТАТ: ПОМИЛКА — HTTP {response.status_code}")
+    print(f"::error::NAZK API помилка (HTTP {response.status_code})")
+    return False
+
+
 def download_declarations(workplace_edrpou: str, output_file: str = None):
     base_url = os.environ.get("NAZK_API_URL")
     print(f"Downloading from {base_url}")
@@ -94,10 +140,7 @@ def download_declarations(workplace_edrpou: str, output_file: str = None):
     all_items = []
 
     session = requests.Session()
-    session.headers.update({
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0"
-    })
+    session.headers.update(NAZK_HEADERS)
 
     while True:
         params = {
@@ -173,6 +216,14 @@ def process_excel(excel_path: str) -> int:
 
 
 if __name__ == "__main__":
+    check_only = "--check-only" in sys.argv
+
+    if not check_nazk_access():
+        sys.exit(1)
+
+    if check_only:
+        sys.exit(0)
+
     excel_path = get_excel_path()
 
     if not Path(excel_path).exists():
