@@ -1,0 +1,20 @@
+name: Test Python Run
+
+on:
+  workflow_dispatch:              # Позволяет запускать скрипт вручную кнопкой
+
+jobs:
+  run-code:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Run Python script
+      run: python script.py
