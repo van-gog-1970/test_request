@@ -18,8 +18,15 @@ INVALID_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]')
 NAZK_HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "uk-UA,uk;q=0.9,en;q=0.8",
-    "Referer": "https://public.nazk.gov.ua/",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Referer": "https://public.nazk.gov.ua/documents/list",
     "Origin": "https://public.nazk.gov.ua",
+    "Sec-Fetch-Site": "same-site",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Ch-Ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
